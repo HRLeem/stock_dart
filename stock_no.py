@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
-from urllib.request import urlopen # HTTP 요청처리
-from zipfile import ZipFile        # 공시회사정보 zipfile 처리
-from io import BytesIO             # stream 데이터를 메모리에 적재
-import os                          # 현재 디렉토리 정보를 얻기 위해
 import xmltodict                   # xml을 dict로 파싱
-from pathlib import Path           # file 존재유무 체크 유틸
-
-import re
-import stock_report as report
-import stock_defs_no as defs_no
+import defs.stock_defs_no as defs_no
 
 API_KEY = "9603774f25edc5686b1d7df2e3d1f8788a864fe3"
 
@@ -30,7 +22,4 @@ corp_list = corp_dict['result']['list']
 corp_list_has_stockcode = [x for x in corp_list if x['stock_code'] is not None]
 # print(len(corp_list_has_stockcode))
 
-
-
-corp_list_has_stockcode = [x for x in corp_list if x['stock_code'] is not None]
-
+defs_no.check_correct(corp_list_has_stockcode)

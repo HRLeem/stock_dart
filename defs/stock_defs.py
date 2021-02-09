@@ -1,15 +1,29 @@
 import requests
 import json
 import pandas as pd
-from pandas import Series, DataFrame
 import numpy as np
 import openpyxl
-import os
-from openpyxl import Workbook
 
-
+def make_params(code):
+    API_KEY = "9603774f25edc5686b1d7df2e3d1f8788a864fe3"
+    PARAMS = {
+        'crtfc_key': API_KEY,
+        # !!!!! 여기에 "고유코드"를 입력해주세요
+        'corp_code': code,
+        # 사업연도(4자리)
+        'bsns_year': '2019',
+        # 사업보고서
+        # 1분기보고서 : 11013
+        # 반기보고서 : 11012
+        # 3분기보고서 : 11014
+        # 사업보고서 : 11011
+        'reprt_code': '11011',
+    }
+    return PARAMS
 # 응답확인하고 전체 재무제표를 df변수로 넘겨주는 함수
-def response(URL, PARAMS):
+def response(code):
+    URL = 'https://opendart.fss.or.kr/api/fnlttSinglAcnt.json'
+    PARAMS = make_params(code)
     resp = requests.get(url=URL, params=PARAMS)
 
     # http 정상응답시 처리
@@ -29,11 +43,11 @@ def response(URL, PARAMS):
 
             # Json 코드 DataFrame으로 변환
             df = pd.json_normalize(detail)
-            print('2feiwnif', df)
+            # print('2feiwnif', df)
             # print(df)
             return df
         else:
-            pass
+            return False
             # print(data_json['message'])
 
 def process_df(df):
@@ -171,6 +185,8 @@ def write_xlsx(god_list, js):
         filename = '재무상태표'
     elif js == 's':
         filename = '손익계산서'
+    elif js == 'i':
+        filename = '투자지표'
     cell_check(filename)
 
     sheet = wb.get_sheet_by_name(filename)

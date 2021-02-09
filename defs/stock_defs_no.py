@@ -6,7 +6,9 @@ import os                          # 현재 디렉토리 정보를 얻기 위해
 import xmltodict                   # xml을 dict로 파싱
 from pathlib import Path           # file 존재유무 체크 유틸
 import re
-import stock_report as report
+import defs.stock_report as report
+import defs.stock_update as update
+import defs.stock_defs as defs
 
 
 def bind_params(params: dict):
@@ -53,17 +55,18 @@ def get_corp_xml(url, params):
 def check_correct(corp_list_has_stockcode):
     while (True):
         count = 0
+        isq = 0
         mcount = 0
+        mclist = []
+        msclist = []
         mname = ''
-
-        mname_list = []
 
         code = ''
         data_keyin = input('회사명을 입력하세요(종료하려면 x를 입력하고 엔터를 눌러주세요!):')
 
 
         if data_keyin.find('!') == 2:
-            mcount = 1
+            isq = 1
             data_keyin = data_keyin[:-1]
         # 'exit'가 입력되면 대화형 콘솔을 종료한다.
         if data_keyin == 'x':
@@ -83,37 +86,59 @@ def check_correct(corp_list_has_stockcode):
                 result = data.group()
                 count += 1
 
-                if mcount == 1:
-                    print('data_keyin = ', data_keyin)
-                    print('format(result)', format(result))
+                if isq == 1:
+                    # print('data_keyin = ', data_keyin)
+                    # print('format(result)', format(result))
                     if data_keyin.lower() == format(result).lower():
-                        print('!!!!!!!!!!!!!!!!!!!!!!!!!')
-                        print('data_keyin = ', data_keyin)
-                        print('format(result)', format(result))
+                        # print('!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        # print('data_keyin = ', data_keyin)
+                        # print('format(result)', format(result))
+                        mcount += 1
+                        mname = format(result)
+                        mclist.append( x['corp_code'] )
+                        msclist.append( x['stock_code'] )
                         # mname = format(result)
-                        mname_list.append( format(result) )
+                        # mname_list.append( format(result) )
                 code = x['corp_code']
+                scode = x['stock_code']
                 print('회사명:{}, 고유코드:{}, 종목코드:{}'.format(result, x['corp_code'], x['stock_code']))
 
         print('mcount = ', mcount)
 
+        # if count == 0:
+        #     print('검색결과가 없습니다.')
+        #
+        # if count == 1 or mcount == 1:
+        #     if mcount == 1:
+        #         name = mname
+        #         # 1. 정확한 이름을 가진 그 기업의 리스트가 하나이냐.
+        #     else:
+        #         name = format(result)
+        #
+        #     print(name, code)
+        #     report.stock_report(name, code)
+        #     print('* Excel에 작성 완료되었습니다 !')
+        #
+        # if count > 1 and mcount != 1:
+        #     print('>> Excel에 작성하기 위해서는 \"정확한 회사명\"을 입력하셔야 합니다.')
+        #     print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
         if count == 0:
             print('검색결과가 없습니다.')
-
-        if count == 1 or mcount == 1:
-            if mcount == 1:
-                name = mname
-                # 1. 정확한 이름을 가진 그 기업의 리스트가 하나이냐.
-            else:
-                name = format(result)
-
-            print(name, code)
-            report.stock_report(name, code)
+        elif count == 1:
+            report.stock_report( format(result) , code)
+            update.update_single( format(result), scode)
             print('* Excel에 작성 완료되었습니다 !')
-
-        if count > 1 and mcount != 1:
-            print('>> Excel에 작성하기 위해서는 \"정확한 회사명\"을 입력하셔야 합니다.')
-            print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
+        elif count > 1:
+            if isq:
+                for c in range( len( mclist ) ):
+                    j = defs.response( mclist[c] )
+                    if j is not False:
+                        report.stock_report( mname , mclist[c] )
+                        update.update_single( mname, msclist[c] )
+                        print('* Excel에 작성 완료되었습니다 !')
+            else:
+                print('>> Excel에 작성하기 위해서는 \"정확한 회사명\"을 입력하셔야 합니다.')
+                print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
 
         print('=' * 100)
 
