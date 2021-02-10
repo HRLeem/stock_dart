@@ -3,11 +3,10 @@ from urllib.request import urlopen # HTTP 요청처리
 from zipfile import ZipFile        # 공시회사정보 zipfile 처리
 from io import BytesIO             # stream 데이터를 메모리에 적재
 import os                          # 현재 디렉토리 정보를 얻기 위해
-import xmltodict                   # xml을 dict로 파싱
 from pathlib import Path           # file 존재유무 체크 유틸
 import re
 import defs.stock_report as report
-import defs.stock_update as update
+import defs.stock_update as update_defs
 import defs.stock_defs as defs
 
 
@@ -62,10 +61,10 @@ def check_correct(corp_list_has_stockcode):
         mname = ''
 
         code = ''
-        data_keyin = input('회사명을 입력하세요(종료하려면 x를 입력하고 엔터를 눌러주세요!):')
+        data_keyin = input('회사명을 입력하세요(종료하려면 x를 입력하고 엔터를 눌러주세요!) : ')
 
 
-        if data_keyin.find('!') == 2:
+        if data_keyin.find('!') > 0:
             isq = 1
             data_keyin = data_keyin[:-1]
         # 'exit'가 입력되면 대화형 콘솔을 종료한다.
@@ -87,51 +86,35 @@ def check_correct(corp_list_has_stockcode):
                 count += 1
 
                 if isq == 1:
-                    # print('data_keyin = ', data_keyin)
-                    # print('format(result)', format(result))
                     if data_keyin.lower() == format(result).lower():
-                        # print('!!!!!!!!!!!!!!!!!!!!!!!!!')
-                        # print('data_keyin = ', data_keyin)
-                        # print('format(result)', format(result))
                         mcount += 1
                         mname = format(result)
                         mclist.append( x['corp_code'] )
                         msclist.append( x['stock_code'] )
-                        # mname = format(result)
-                        # mname_list.append( format(result) )
                 code = x['corp_code']
                 scode = x['stock_code']
                 print('회사명:{}, 고유코드:{}, 종목코드:{}'.format(result, x['corp_code'], x['stock_code']))
 
-        print('mcount = ', mcount)
-
-        # if count == 0:
-        #     print('검색결과가 없습니다.')
-        #
-        # if count == 1 or mcount == 1:
-        #     if mcount == 1:
-        #         name = mname
-        #         # 1. 정확한 이름을 가진 그 기업의 리스트가 하나이냐.
-        #     else:
-        #         name = format(result)
-        #
-        #     print(name, code)
-        #     report.stock_report(name, code)
-        #     print('* Excel에 작성 완료되었습니다 !')
-        #
-        # if count > 1 and mcount != 1:
-        #     print('>> Excel에 작성하기 위해서는 \"정확한 회사명\"을 입력하셔야 합니다.')
-        #     print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
+        update = update_defs.Update()
         if count == 0:
             print('검색결과가 없습니다.')
         elif count == 1:
-            report.stock_report( format(result) , code)
-            update.update_single( format(result), scode)
-            print('* Excel에 작성 완료되었습니다 !')
+            rightornot = input('찾으시는 회사가 맞나요? << {} >> || (o/x) 입력 후 엔터를 눌러주세요 : '.format(result))
+            if rightornot == 'o':
+                report.stock_report( format(result) , code)
+                update.update_single( format(result), scode)
+                print('* Excel에 작성 완료되었습니다 !')
+            elif rightornot == 'x':
+                continue
         elif count > 1:
             if isq:
                 for c in range( len( mclist ) ):
-                    j = defs.response( mclist[c] )
+                    print(isq)
+                    print(mclist)
+                    print(mname)
+                    judge = defs.Defs()
+                    judge.yamishogun(mname, mclist[c])
+                    j = judge.j
                     if j is not False:
                         report.stock_report( mname , mclist[c] )
                         update.update_single( mname, msclist[c] )
@@ -141,22 +124,3 @@ def check_correct(corp_list_has_stockcode):
                 print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
 
         print('=' * 100)
-
-
-
-
-
-
-
-  # 파일존재 체크 다른 방법들..
-  # if os.path.isfile(dirpath + '\CORPCODE.xml'):
-
-
-#     return True
-# else:
-#     return False
-# try:
-#     open(dirpath + '\CORPCODE.xml', 'r')
-#     return True
-# except FileNotFoundError:
-#     return False
