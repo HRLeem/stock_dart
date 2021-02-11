@@ -7,9 +7,10 @@ import openpyxl
 class Crawl:
     def __init__(self):
         self.lists_sheet =[[1, 2, 3], [4, 5, 7], [14, 15, 16], ['p', 10, 11, 6]]
-        self.lists_sheet_num = [[3, 3], [3, 3], [2, 3], [3, 2]]
+        self.lists_sheet_num = [[3, 3], [3, 3], [2, 3], [4, 2]]
         self.issimple = 0
         self.line_list = []
+        self.count = 0
     #     3 4 5 (2020) 2 3 4 (2019
 
 
@@ -31,31 +32,30 @@ class Crawl:
                     if self.lists_sheet[x][y] == 'p':
                         url = 'p.no_today'
                         if z ==0:
-                            self.make_element(url, z, self.lists_sheet_num[x][1], x, 'p')
+                            self.make_element(url, x, y, z, 'p')
                     else:
                         first = str(self.lists_sheet[x][y])
                         second = str(self.lists_sheet_num[x][0]+z)
                         url = 'div.cop_analysis table tbody tr:nth-child('+ first +') td:nth-child('+ second +')'
-                        self.make_element(url, z, self.lists_sheet_num[x][1], x, ' ')
+                        self.make_element(url, x, y, z, ' ')
 
-    def make_element(self, url, east, west, x, p):
+    def make_element(self, url, x, y, z, p):
         print('***********************************')
-        print('east = ', east)
-        print('west = ', west)
-        print('x = ', x)
+        print('len(self.lists_sheet[x]) = ', len(self.lists_sheet[x]))
+        print('z = ', z)
         print('p = ', p)
         print('***********************************')
         if self.count == 0:
+            self.line_list = []
             self.line_list.append(self.name)
             self.count = 1
+        element = self.soup.select_one(url).text.strip()
+        if p == 'p':
+            element = element.split('\n')
+            self.line_list.append(element[0])
         else:
-            element = self.soup.select_one(url).text.strip()
-            if p == 'p':
-                element = element.split('\n')
-                self.line_list.append(element[0])
-            else:
-                self.line_list.append(element)
-        if west - east == 1:
+            self.line_list.append(element)
+        if len(self.lists_sheet[x]) - y == 1 and self.lists_sheet_num[x][1] - z == 1:
             excel = Excel()
             excel.save_excel(x, self.line_list)
 

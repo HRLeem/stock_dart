@@ -8,6 +8,7 @@ import re
 import xmltodict
 
 import execution.defs.defs_crawl as crawl
+import execution.sosok as sosok
 
 class Request_list:
     def __init__(self):
@@ -74,34 +75,36 @@ class Search:
                 data_keyin = data_keyin[:-1]
             if data_keyin == 'x':
                 break
+            if data_keyin == '시가총액':
+                self.sosoks()
+            else:
+                p = re.compile(r'.*({}).*'.format(data_keyin), re.IGNORECASE)
 
-            p = re.compile(r'.*({}).*'.format(data_keyin), re.IGNORECASE)
+                print('{}을 검색한 결과는 아래와 같습니다.'.format(data_keyin))
+                print('=' * 100)
+                result = ''
+                for x in self.corp_list:
+                    data = re.search(p, x['corp_name'])
 
-            print('{}을 검색한 결과는 아래와 같습니다.'.format(data_keyin))
-            print('=' * 100)
-            result = ''
-            for x in self.corp_list:
-                data = re.search(p, x['corp_name'])
-
-                if data:
-                    result = data.group()
-                    self.count +=1
-                    print(self.count)
-                    if self.isq == 1:
-                        if data_keyin.lower() == format(result).lower():
-                            self.mcount += 1
-                            self.mname = format(result)
-                            self.mclist.append(x['stock_code'])
-                    self.code = x['stock_code']
-                    print('회사명:{}, 종목코드:{}'.format(result, x['stock_code']))
-            j = self.count_case(format(result))
-            if j == 'refresh':
-                continue
-            elif j == 'done':
-                print('* Excel에 작성이 완료되었습니다 ! ')
-            elif j == 'exactly':
-                print('>> Excel에 작성하기 위해서는 \"정확한 회사명\"을 입력하셔야 합니다.')
-                print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
+                    if data:
+                        result = data.group()
+                        self.count +=1
+                        print(self.count)
+                        if self.isq == 1:
+                            if data_keyin.lower() == format(result).lower():
+                                self.mcount += 1
+                                self.mname = format(result)
+                                self.mclist.append(x['stock_code'])
+                        self.code = x['stock_code']
+                        print('회사명:{}, 종목코드:{}'.format(result, x['stock_code']))
+                j = self.count_case(format(result))
+                if j == 'refresh':
+                    continue
+                elif j == 'done':
+                    print('* Excel에 작성이 완료되었습니다 ! ')
+                elif j == 'exactly' and data_keyin !='시가총액':
+                    print('>> Excel에 작성하기 위해서는 \"정확한 회사명\"을 입력하셔야 합니다.')
+                    print('>> sk를 검색하고 싶은데 결과가 많아서 입력이 안된다면, !를 붙여주세요 < ex) sk! >')
         print('='*100)
 
 
@@ -129,3 +132,20 @@ class Search:
                         return 'done'
             else:
                 return 'exactly'
+    def sosoks(self):
+        while(True):
+            inputed = input('입력창에 KOSPI (kospi) 혹은 KOSDAQ (kosdaq) 을 입력해주세요 : ')
+            if inputed == 'kospi' or inputed == 'kosdaq' or inputed == 'KOSPI' or inputed == 'KOSDAQ':
+                sosok50 = sosok.crawl_sosok()
+                if inputed == 'kospi' or inputed == 'KOSPI':
+                    sosok50.crawl(0)
+                    return
+                elif inputed == 'kosdaq' or inputed == 'KOSDAQ':
+                    sosok50.crawl(1)
+                    return
+                else:
+                    print('ERROR!!! 에러발생 in self.sosoks(self): || defs_search.py')
+            else:
+                print('-'*50)
+                print('> 입력하신 내용 << {} >>'.format(inputed))
+                print('> 입력한 내용을 확인하시고 다시 입력해주세요')
