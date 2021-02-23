@@ -2,20 +2,31 @@
 from bs4 import BeautifulSoup
 import requests
 import openpyxl
-
+from tqdm import tqdm
 
 class Crawl:
     def __init__(self):
-        self.lists_sheet =[[1, 2, 3], [4, 5, 7], [14, 15, 16], ['p', 10, 11, 6]]
-        self.lists_sheet_num = [[3, 3], [3, 3], [2, 3], [4, 2]]
+        self.c_indicator = ['p', 1, 2, 4, 3, 5, 10, 11, 6]
         self.issimple = 0
         self.line_list = []
-        self.count = 0
-    #     3 4 5 (2020) 2 3 4 (2019
 
+    def update_price(self):
+        excel = Excel()
+        code_list = excel.update_price_excel()
+        count = 3
+        for code in tqdm(code_list):
+            self.code = code
+            self.get_html()
+            if self.resp.status_code == 200:
+                element = BeautifulSoup(self.html, 'html.parser').select_one('p.no_today').text.strip().split('\n')
+                excel.save_a_price(element[0], count)
+                count += 1
+            else:
+                print('ERROR ! in update_price, class Crawl')
 
     def update_single(self, name, code):
-        self.get_html(code)
+        self.code = code
+        self.get_html()
         self.name = name
         if self.resp.status_code == 200:
             self.soup = BeautifulSoup(self.html, 'html.parser')
@@ -25,42 +36,38 @@ class Crawl:
                 self.crawl_it()
 
     def crawl_it(self):
-        for x in range(0, 4):
-            self.count = 0
-            for y in range(len(self.lists_sheet[x])):
-                for z in range(0, self.lists_sheet_num[x][1]):
-                    if self.lists_sheet[x][y] == 'p':
-                        url = 'p.no_today'
-                        if z ==0:
-                            self.make_element(url, x, y, z, 'p')
-                    else:
-                        first = str(self.lists_sheet[x][y])
-                        second = str(self.lists_sheet_num[x][0]+z)
-                        url = 'div.cop_analysis table tbody tr:nth-child('+ first +') td:nth-child('+ second +')'
-                        self.make_element(url, x, y, z, ' ')
+        for x in self.c_indicator:
+            if x == 'p':
+                url = 'p.no_today'
+                self.insert_list(url)
+            else:
+                if x == 10 or x == 11 or x == 6:
+                    for i in range(3, 5):
+                        url = 'div.cop_analysis table tbody tr:nth-child(' + str(x) + ') td:nth-child(' + str(i) + ')'
+                        self.insert_list(url)
+                else:
+                    for i in range(3, 6):
+                        url = 'div.cop_analysis table tbody tr:nth-child(' + str(x) + ') td:nth-child(' + str(i) + ')'
+                        self.insert_list(url)
+        code_list = self.make_code_list()
+        excel = Excel()
+        excel.save_excel(self.line_list, code_list)
 
-    def make_element(self, url, x, y, z, p):
-        print('***********************************')
-        print('len(self.lists_sheet[x]) = ', len(self.lists_sheet[x]))
-        print('z = ', z)
-        print('p = ', p)
-        print('***********************************')
-        if self.count == 0:
-            self.line_list = []
-            self.line_list.append(self.name)
-            self.count = 1
+    def insert_list(self, url):
         element = self.soup.select_one(url).text.strip()
-        if p == 'p':
+        if url == 'p.no_today':
+            self.line_list.append(self.name)
             element = element.split('\n')
             self.line_list.append(element[0])
         else:
             self.line_list.append(element)
-        if len(self.lists_sheet[x]) - y == 1 and self.lists_sheet_num[x][1] - z == 1:
-            excel = Excel()
-            excel.save_excel(x, self.line_list)
 
-    def get_html(self, code):
-        url = 'https://finance.naver.com/item/main.nhn?code='+code
+    def make_code_list(self):
+        result = ['', self.code]
+        return result
+
+    def get_html(self):
+        url = 'https://finance.naver.com/item/main.nhn?code='+self.code
         self.resp = requests.get(url)
         self.html = self.resp.text
 
@@ -80,13 +87,36 @@ class Crawl:
 
 class Excel:
     def __init__(self):
-        self.list_sheet = ['손익계산서', '비율지표', '배당지표', '투자지표']
         self.name = 'stock.xlsx'
+        self.code_list = []
 
-    def save_excel(self, where, list):
-        print('EXCEL!!!!!!!!!')
+    def save_excel(self, list, code):
         wb = openpyxl.load_workbook(self.name)
 
-        sheet = wb.get_sheet_by_name(self.list_sheet[where])
+        sheet = wb.get_sheet_by_name('기업정보')
         sheet.append(list)
         wb.save(self.name)
+
+        sheet = wb.get_sheet_by_name('for_code')
+        sheet.append(code)
+        wb.save(self.name)
+
+    def update_price_excel(self):
+        self.wb = openpyxl.load_workbook(self.name)
+        self.ws = self.wb.get_sheet_by_name('기업정보')
+        self.take_code_list()
+        return self.code_list
+
+    def take_code_list(self):
+        ws = self.wb.get_sheet_by_name('for_code')
+        for i in range(3, 999):
+            element = ws['B'+str(i)].value
+            if element is None:
+                break
+            else:
+                self.code_list.append(element)
+
+    def save_a_price(self, element, count):
+        self.ws['B'+str(count)] = element
+        self.wb.save(self.name)
+        return
