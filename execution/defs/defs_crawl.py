@@ -57,8 +57,10 @@ class Crawl:
         element = self.soup.select_one(url).text.strip()
         if url == 'p.no_today':
             self.line_list.append(self.name)
+            sosok = self.soup.select_one('#_market_sum').text.strip()+"억"
             element = element.split('\n')
             self.line_list.append(element[0])
+            self.line_list.append(sosok)
         else:
             self.line_list.append(element)
 
