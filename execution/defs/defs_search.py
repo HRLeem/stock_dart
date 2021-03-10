@@ -41,7 +41,8 @@ class Search:
         else:
             return False
 
-    def pick_corp(self):
+    def pick_corp(self, year):
+        self.year = year
         while (True):
             self.count = 0
             self.mcount = 0
@@ -56,6 +57,10 @@ class Search:
                 break
             elif data_keyin == '시가총액':
                 self.sosoks()
+            elif data_keyin == '복사':
+                exfilename = input('>>>>>> 옮길 파일의 이름을 입력해주세요 : ')
+                a = crawl.Crawl()
+                a.copy_excel(exfilename, year)
             elif data_keyin == '업데이트':
                 a = crawl.Crawl()
                 a.update_price()
@@ -105,7 +110,7 @@ class Search:
                 return 'refresh'
             else:
                 write = crawl.Crawl()
-                write.update_single(result, code)
+                write.update_single(result, code, self.year)
                 return 'done'
         elif self.count > 1:
             if self.isq:
@@ -117,7 +122,7 @@ class Search:
                         continue
                     else:
                         write = crawl.Crawl()
-                        write.update_single(self.mname, self.mclist[c])
+                        write.update_single(self.mname, self.mclist[c], self.year)
                         return 'done'
             else:
                 return 'exactly'
